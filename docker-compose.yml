@@ -1,0 +1,51 @@
+version: '3.0'
+
+services:
+  api-producer:
+    build: ./api-producer/
+    container_name: api-producer
+    ports: 
+      - "8889:8889"
+    environment: 
+      RABBIT_USER: guest
+      RABBIT_PASS: guest
+      RABBIT_HOSTNAME: rabbitmq
+      RABBIT_PORT: 5672
+    depends_on: 
+      - rabbitmq
+    command: ["./wait-for-it.sh", "rabbitmq:5672", "--", "go", "run", "main.go"]
+
+  database-service-consumer:
+    build: ./database-service-consumer/
+    container_name: database-service-consumer
+    environment: 
+      DATABASE: host=postgres port=5432 user=postgres password=postgres dbname=mydb sslmode=disable
+      RABBIT_USER: guest
+      RABBIT_PASS: guest
+      RABBIT_HOSTNAME: rabbitmq
+      RABBIT_PORT: 5672
+    depends_on: 
+      - postgres
+      - rabbitmq
+    command: ["./wait-for-it.sh", "postgres:5432", "--", "./wait-for-it.sh", "rabbitmq:5672", "--", "go", "run", "main.go"]
+
+  postgres:
+    build: ./postgres/
+    container_name: postgres-consumer-rabbit
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mydb
+    ports:
+      - "5440:5432"
+
+  rabbitmq:
+    image: rabbitmq:3.6.0-management
+    container_name: rabbit-container
+    hostname: rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
