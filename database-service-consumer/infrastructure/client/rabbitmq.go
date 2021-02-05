@@ -1,4 +1,4 @@
-package rabbitmq
+package client
 
 import (
 	"fmt"
@@ -7,11 +7,17 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type RabbitMQ struct {
+type rabbitMQ struct {
 	connection *amqp.Connection
 }
 
-func (self *RabbitMQ) Connect(user string, password string, hostname string, port int) {
+func NewRabbitMQ(user string, password string, hostname string, port int) *rabbitMQ {
+	rabbit := &rabbitMQ{}
+	rabbit.connect(user, password, hostname, port)
+	return rabbit
+}
+
+func (self *rabbitMQ) connect(user string, password string, hostname string, port int) {
 	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d", user, password, hostname, port))
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %s", err)
@@ -19,7 +25,7 @@ func (self *RabbitMQ) Connect(user string, password string, hostname string, por
 	self.connection = conn
 }
 
-func (self *RabbitMQ) Consume(queueName string) <-chan amqp.Delivery {
+func (self *rabbitMQ) Consume(queueName string) <-chan amqp.Delivery {
 	ch, err := self.connection.Channel()
 	if err != nil {
 		log.Fatalf("Failed to open a channel: %s", err)

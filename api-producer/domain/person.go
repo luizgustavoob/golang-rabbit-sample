@@ -1,4 +1,4 @@
-package models
+package domain
 
 import (
 	"math/rand"
@@ -6,16 +6,16 @@ import (
 )
 
 const (
-	size    = 5
+	size    = 8
 	simbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-+"
 )
 
 type Person struct {
-	ID       string `json:"id,omitempty"`
-	Nome     string `json:"nome,omitempty"`
-	Idade    int    `json:"idade,omitempty"`
-	Email    string `json:"email,omitempty"`
-	Telefone string `json:"telefone,omitempty"`
+	ID    string `json:"id,omitempty"`
+	Name  string `json:"nome,omitempty"`
+	Age   int    `json:"idade,omitempty"`
+	Email string `json:"email,omitempty"`
+	Phone string `json:"telefone,omitempty"`
 }
 
 func init() {
@@ -32,4 +32,12 @@ func (self *Person) GenerateID() {
 	}
 
 	self.ID = newID()
+}
+
+type PersonService interface {
+	AddPerson(person *Person) (*Person, error)
+}
+
+type PersonClient interface {
+	AddNewPerson(person *Person) (*Person, error)
 }
