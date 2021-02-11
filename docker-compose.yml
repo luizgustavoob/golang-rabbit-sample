@@ -3,9 +3,10 @@ version: '3.0'
 services:
   api-producer:
     build: ./api-producer/
+    working_dir: /go/src/github.com/golang-rabbit-sample/api-producer
     container_name: api-producer
-    ports: 
-      - "8889:8889"
+    volumes:
+      - ./scripts/shell:/go/src/github.com/golang-rabbit-sample/api-producer/scripts
     environment: 
       RABBIT_USER: guest
       RABBIT_PASS: guest
@@ -13,11 +14,16 @@ services:
       RABBIT_PORT: 5672
     depends_on: 
       - rabbitmq
-    command: ["./wait-for-it.sh", "rabbitmq:5672", "--", "go", "run", "cmd/api-producer/main.go"]
+    ports: 
+      - "8889:8889"
+    command: ["./scripts/wait-for-it.sh", "rabbitmq:5672", "--", "go", "run", "cmd/api-producer/main.go"]
 
   database-service-consumer:
     build: ./database-service-consumer/
+    working_dir: /go/src/github.com/golang-rabbit-sample/database-service-consumer
     container_name: database-service-consumer
+    volumes:
+      - ./scripts/shell:/go/src/github.com/golang-rabbit-sample/database-service-consumer/scripts
     environment: 
       DATABASE: host=postgres port=5432 user=postgres password=postgres dbname=mydb sslmode=disable
       RABBIT_USER: guest
@@ -27,11 +33,13 @@ services:
     depends_on: 
       - postgres
       - rabbitmq
-    command: ["./wait-for-it.sh", "postgres:5432", "--", "./wait-for-it.sh", "rabbitmq:5672", "--", "go", "run", "cmd/database-service-consumer/main.go"]
+    command: ["./scripts/wait-for-it.sh", "postgres:5432", "--", "./scripts/wait-for-it.sh", "rabbitmq:5672", "--", "go", "run", "cmd/database-service-consumer/main.go"]
 
   postgres:
-    build: ./postgres/
+    image: postgres:12-alpine
     container_name: postgres
+    volumes: 
+      - ./scripts/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -43,9 +51,9 @@ services:
     image: rabbitmq:3.6.0-management
     container_name: rabbitmq
     hostname: rabbitmq
-    ports:
-      - "15672:15672"
-      - "5672:5672"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "15672:15672"
+      - "5672:5672"
