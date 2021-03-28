@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/golang-rabbit-sample/database-service-consumer/domain"
-	"github.com/streadway/amqp"
+	pkgRabbit "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/client/rabbit"
 )
 
 type personMonitor struct {
@@ -17,8 +17,10 @@ func NewPersonMonitor(service domain.PersonService) *personMonitor {
 	return &personMonitor{service}
 }
 
-func (self *personMonitor) StartMonitoring(people <-chan amqp.Delivery) {
-	for msgPerson := range people {
+func (self *personMonitor) StartMonitoring(user string, password string, hostname string, port int) {
+	rabbit := pkgRabbit.NewRabbitMQ(user, password, hostname, port)
+
+	for msgPerson := range rabbit.Consume("person-queue") {
 		log.Println(fmt.Sprintf("MENSAGEM: %s", msgPerson.Body))
 
 		person := &domain.Person{}

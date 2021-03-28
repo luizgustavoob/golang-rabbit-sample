@@ -1,4 +1,4 @@
-package client
+package rabbit
 
 import (
 	"fmt"
@@ -31,12 +31,27 @@ func (self *rabbitMQ) Consume(queueName string) <-chan amqp.Delivery {
 		log.Fatalf("Failed to open a channel: %s", err)
 	}
 
-	queue, err := ch.QueueDeclare(queueName, false, false, false, false, nil)
+	queue, err := ch.QueueDeclare(
+		queueName, // name
+		false,     // durable
+		false,     // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		nil)       // args
+
 	if err != nil {
 		log.Fatalf("Failed to open a channel: %s", err)
 	}
 
-	msgs, err := ch.Consume(queue.Name, "", true, false, false, false, nil)
+	msgs, err := ch.Consume(
+		queue.Name, // queue
+		"",         // consumer
+		true,       // autoAck
+		false,      // exclusive
+		false,      // noLocal
+		false,      // noWait
+		nil)        //args
+
 	if err != nil {
 		log.Fatalf("Failed to register a consumer: %s", err)
 	}

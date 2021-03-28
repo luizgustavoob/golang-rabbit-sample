@@ -5,24 +5,25 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/golang-rabbit-sample/database-service-consumer/domain/person"
-	"github.com/golang-rabbit-sample/database-service-consumer/infrastructure/client"
-	"github.com/golang-rabbit-sample/database-service-consumer/infrastructure/storage"
+	pkgPersonService "github.com/golang-rabbit-sample/database-service-consumer/domain/person"
+	pkgPersonClient "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/client/person"
+	pkgStorage "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/storage"
+	pkgPersonStorage "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/storage/person"
 )
 
 func main() {
-	consumer := client.NewRabbitMQ(getRabbitUser(), getRabbitPassword(), getRabbitHostName(), getRabbitPort())
-	postgresDB, err := storage.NewConnection(getDatabase())
+	db, err := pkgStorage.NewConnection(getDatabase())
 	if err != nil {
 		return
 	}
-	defer postgresDB.DB.Close()
-	service := person.NewService(postgresDB)
-	personMonitor := client.NewPersonMonitor(service)
+	defer db.Close()
+
+	storage := pkgPersonStorage.NewPersonStorage(db)
+	service := pkgPersonService.NewService(storage)
+	client := pkgPersonClient.NewPersonMonitor(service)
 
 	forever := make(chan bool)
-	people := consumer.Consume("person-queue")
-	go personMonitor.StartMonitoring(people)
+	go client.StartMonitoring(getRabbitUser(), getRabbitPassword(), getRabbitHostName(), getRabbitPort())
 	log.Println("Service running...")
 	<-forever
 }

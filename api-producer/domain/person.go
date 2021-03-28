@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+type PersonService interface {
+	AddPerson(person *Person) (*Person, error)
+}
+
+type PersonClient interface {
+	AddNewPerson(person *Person) (*Person, error)
+}
+
 const (
 	size    = 8
 	simbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-+"
@@ -34,10 +42,7 @@ func (self *Person) GenerateID() {
 	self.ID = newID()
 }
 
-type PersonService interface {
-	AddPerson(person *Person) (*Person, error)
-}
-
-type PersonClient interface {
-	AddNewPerson(person *Person) (*Person, error)
+func (self *Person) IsValid() bool {
+	return (self.ID != "" && self.Name != "" &&
+		self.Age > 0 && self.Email != "" && self.Phone != "")
 }
