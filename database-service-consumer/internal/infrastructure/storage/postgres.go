@@ -7,11 +7,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type PostgresDB struct {
-	DB *sql.DB
-}
-
-func NewConnection(url string) (*PostgresDB, error) {
+func NewConnection(url string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", url)
 	if err != nil {
 		log.Fatalf("Failed to connect to PostgreSQL: %s", err)
@@ -25,5 +21,5 @@ func NewConnection(url string) (*PostgresDB, error) {
 	}
 
 	log.Println("PostgreSQL connection ok!")
-	return &PostgresDB{DB: db}, nil
+	return db, nil
 }

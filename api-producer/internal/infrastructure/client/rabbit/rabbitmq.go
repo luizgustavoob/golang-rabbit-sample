@@ -1,4 +1,4 @@
-package client
+package rabbit
 
 import (
 	"fmt"
@@ -32,13 +32,29 @@ func (self *rabbitMQ) Publish(queueName string, message string) (err error) {
 		return
 	}
 
-	queue, err := ch.QueueDeclare(queueName, false, false, false, false, nil)
+	queue, err := ch.QueueDeclare(
+		queueName, // name
+		false,     // durable
+		false,     // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		nil)       // args
+
 	if err != nil {
 		log.Fatalf("Failed to open a channel: %s", err)
 		return
 	}
 
-	err = ch.Publish("", queue.Name, false, false, amqp.Publishing{ContentType: "application/json", Body: []byte(message)})
+	err = ch.Publish(
+		"",         // exchange
+		queue.Name, // key
+		false,      // mandatory
+		false,      // immediate
+		amqp.Publishing{ // message
+			ContentType: "application/json",
+			Body:        []byte(message),
+		})
+
 	if err != nil {
 		log.Fatalf("Failed to publish a message: %s", err)
 		return

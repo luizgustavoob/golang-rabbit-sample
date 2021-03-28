@@ -8,21 +8,21 @@ import (
 )
 
 type personClient struct {
-	publisher *rabbitMQ
+	publisher domain.Messaging
 }
 
-func NewPersonClient(publisher *rabbitMQ) *personClient {
+func NewPersonClient(publisher domain.Messaging) *personClient {
 	return &personClient{publisher}
 }
 
-func (c *personClient) AddNewPerson(person *domain.Person) (*domain.Person, error) {
+func (self *personClient) AddNewPerson(person *domain.Person) (*domain.Person, error) {
 	personBytes, err := json.Marshal(&person)
 	if err != nil {
 		log.Fatalf("Failed in marshaling person: %s", err)
 		return nil, err
 	}
 
-	err = c.publisher.Publish("person-queue", string(personBytes))
+	err = self.publisher.Publish("person-queue", string(personBytes))
 	if err != nil {
 		log.Fatalf("Failed to publish message in queue: %s", err)
 		return nil, err

@@ -33,7 +33,7 @@ services:
     depends_on: 
       - postgres
       - rabbitmq
-    command: ["./scripts/wait-for-it.sh", "postgres:5432", "--", "./scripts/wait-for-it.sh", "rabbitmq:5672", "--", "go", "run", "cmd/database-service-consumer/main.go"]
+    command: ["./scripts/wait-for-it.sh", "postgres:5432", "rabbitmq:5672", "--", "go", "run", "cmd/database-service-consumer/main.go"]
 
   postgres:
     image: postgres:12-alpine

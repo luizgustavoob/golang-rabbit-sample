@@ -1,6 +1,7 @@
 FROM golang:alpine
 WORKDIR /go/src/github.com/golang-rabbit-sample/api-producer
 COPY . .
+ENV GO111MODULE=off
 RUN apk update 
 RUN apk add bash 
 RUN apk add --no-cache git 
