@@ -6,19 +6,17 @@ import (
 	"strconv"
 	"syscall"
 
-	pkgPersonService "github.com/golang-rabbit-sample/api-producer/domain/person"
-	pkgPersonClient "github.com/golang-rabbit-sample/api-producer/internal/infrastructure/client/person"
-	pkgRabbit "github.com/golang-rabbit-sample/api-producer/internal/infrastructure/client/rabbit"
-	pkgServer "github.com/golang-rabbit-sample/api-producer/internal/infrastructure/server"
+	service "github.com/golang-rabbit-sample/api-producer/domain/person"
+	messaging "github.com/golang-rabbit-sample/api-producer/internal/infrastructure/client/rabbit"
+	httpServer "github.com/golang-rabbit-sample/api-producer/internal/infrastructure/server"
 )
 
 func main() {
-	publisher := pkgRabbit.NewRabbitMQ(getRabbitUser(), getRabbitPassword(), getRabbitHostName(), getRabbitPort())
-	personClient := pkgPersonClient.NewPersonClient(publisher)
-	personService := pkgPersonService.NewService(personClient)
+	publisher := messaging.NewRabbitMQ(getRabbitUser(), getRabbitPassword(), getRabbitHostName(), getRabbitPort())
+	personService := service.NewService(publisher)
 
-	handler := pkgServer.NewHandler(personService)
-	server := pkgServer.New("8889", handler)
+	handler := httpServer.NewHandler(personService)
+	server := httpServer.New("8889", handler)
 	server.ListenAndServe()
 
 	stopChan := make(chan os.Signal, 1)
