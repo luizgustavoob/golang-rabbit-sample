@@ -12,7 +12,6 @@ import (
 
 	"github.com/golang-rabbit-sample/api-producer/domain"
 	"github.com/golang-rabbit-sample/api-producer/domain/person"
-	client "github.com/golang-rabbit-sample/api-producer/internal/infrastructure/client/person"
 	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/client/rabbit"
 	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/server"
 	"github.com/stretchr/testify/assert"
@@ -38,9 +37,11 @@ func TestPersonHandler_AddPerson(t *testing.T) {
 			},
 		}
 
-		clientMock := client.PersonClientMock{
+		serviceMock := &person.PersonServiceMock{
 			FakeRabbit: rabbitMock,
-			AddNewPersonFn: func(person *domain.Person, fakeRabbit *rabbit.RabbitMQMock) (*domain.Person, error) {
+			AddPersonFn: func(person *domain.Person, fakeRabbit *rabbit.RabbitMQMock) (*domain.Person, error) {
+				person.ID = "abcd1234"
+
 				personJs, _ := json.Marshal(person)
 				err := fakeRabbit.Publish("queue-name", string(personJs))
 				if err != nil {
@@ -48,14 +49,6 @@ func TestPersonHandler_AddPerson(t *testing.T) {
 				}
 
 				return person, nil
-			},
-		}
-
-		serviceMock := &person.ServiceMock{
-			PersonClient: clientMock,
-			AddPersonFn: func(person *domain.Person, client *client.PersonClientMock) (*domain.Person, error) {
-				person.ID = "abcd1234"
-				return client.AddNewPerson(person)
 			},
 		}
 
@@ -79,11 +72,10 @@ func TestPersonHandler_AddPerson(t *testing.T) {
 		assert.True(t, person.IsValid())
 
 		assert.Equal(t, 1, serviceMock.AddPersonInvokedCount)
-		assert.Equal(t, 1, serviceMock.PersonClient.AddNewPersonInvokedCount)
-		assert.Equal(t, 1, serviceMock.PersonClient.FakeRabbit.PublishInvokedCount)
-		assert.Equal(t, 1, len(serviceMock.PersonClient.FakeRabbit.FakeQueue))
+		assert.Equal(t, 1, serviceMock.FakeRabbit.PublishInvokedCount)
+		assert.Equal(t, 1, len(serviceMock.FakeRabbit.FakeQueue))
 
-		message := serviceMock.PersonClient.FakeRabbit.FakeQueue[0]
+		message := serviceMock.FakeRabbit.FakeQueue[0]
 
 		assert.Equal(t, string(responsePost), message)
 	})

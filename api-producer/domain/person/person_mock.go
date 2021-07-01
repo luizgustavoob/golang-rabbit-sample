@@ -2,16 +2,16 @@ package person
 
 import (
 	"github.com/golang-rabbit-sample/api-producer/domain"
-	client "github.com/golang-rabbit-sample/api-producer/internal/infrastructure/client/person"
+	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/client/rabbit"
 )
 
-type ServiceMock struct {
+type PersonServiceMock struct {
 	AddPersonInvokedCount int
-	PersonClient          client.PersonClientMock
-	AddPersonFn           func(person *domain.Person, client *client.PersonClientMock) (*domain.Person, error)
+	FakeRabbit            rabbit.RabbitMQMock
+	AddPersonFn           func(person *domain.Person, fakeRabbit *rabbit.RabbitMQMock) (*domain.Person, error)
 }
 
-func (self *ServiceMock) AddPerson(person *domain.Person) (*domain.Person, error) {
+func (self *PersonServiceMock) AddPerson(person *domain.Person) (*domain.Person, error) {
 	self.AddPersonInvokedCount++
-	return self.AddPersonFn(person, &self.PersonClient)
+	return self.AddPersonFn(person, &self.FakeRabbit)
 }

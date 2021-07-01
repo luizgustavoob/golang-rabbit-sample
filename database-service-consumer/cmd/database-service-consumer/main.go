@@ -1,29 +1,45 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 
-	pkgPersonService "github.com/golang-rabbit-sample/database-service-consumer/domain/person"
-	pkgPersonClient "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/client/person"
-	pkgStorage "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/storage"
-	pkgPersonStorage "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/storage/person"
+	domain "github.com/golang-rabbit-sample/database-service-consumer/domain"
+	service "github.com/golang-rabbit-sample/database-service-consumer/domain/person"
+	messaging "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/client/rabbit"
+	postgres_storage "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/storage"
+	storage "github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/storage/person"
 )
 
 func main() {
-	db, err := pkgStorage.NewConnection(getDatabase())
+	db, err := postgres_storage.NewConnection(getDatabase())
 	if err != nil {
 		return
 	}
 	defer db.Close()
 
-	storage := pkgPersonStorage.NewPersonStorage(db)
-	service := pkgPersonService.NewService(storage)
-	client := pkgPersonClient.NewPersonMonitor(service)
+	personStorage := storage.NewPersonStorage(db)
+	personService := service.NewService(personStorage)
 
 	forever := make(chan bool)
-	go client.StartMonitoring(getRabbitUser(), getRabbitPassword(), getRabbitHostName(), getRabbitPort())
+	go func(user string, password string, hostname string, port int) {
+		personQueue := messaging.NewRabbitMQ(user, password, hostname, port).Consume("person-queue")
+
+		for msgPerson := range personQueue {
+			log.Println(fmt.Sprintf("MENSAGEM: %s", msgPerson.Body))
+			person := &domain.Person{}
+			err := json.Unmarshal([]byte(msgPerson.Body), &person)
+			if err != nil {
+				log.Fatalf("Failed to unmarshal person: %s", err)
+			}
+			go personService.AddPerson(person)
+		}
+
+	}(getRabbitUser(), getRabbitPassword(), getRabbitHostname(), getRabbitPort())
+
 	log.Println("Service running...")
 	<-forever
 }
@@ -44,7 +60,7 @@ func getRabbitPassword() string {
 	return pass
 }
 
-func getRabbitHostName() string {
+func getRabbitHostname() string {
 	hostname := os.Getenv("RABBIT_HOSTNAME")
 	if hostname == "" {
 		return "localhost"
