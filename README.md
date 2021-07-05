@@ -2,11 +2,13 @@ Demo da utilização do broker RabbitMQ intermediando a comunicação entre serv
 
 ## Pré Requisitos
 * [Docker](https://www.docker.com/)
+* [Docker Compose](https://docs.docker.com/compose/)
+* [Makefile](https://www.gnu.org/software/make/manual/make.html)
 
 ## Execução
 Após baixar o repositório, deve-se acessar a pasta raiz do projeto e executar
 ```
-  docker-compose up
+  make up
 ```
 que os serviços serão iniciados.
 

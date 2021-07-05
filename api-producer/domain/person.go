@@ -9,10 +9,6 @@ type PersonService interface {
 	AddPerson(person *Person) (*Person, error)
 }
 
-type PersonClient interface {
-	AddNewPerson(person *Person) (*Person, error)
-}
-
 const (
 	size    = 8
 	simbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-+"

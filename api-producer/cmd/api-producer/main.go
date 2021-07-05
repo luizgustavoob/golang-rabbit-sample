@@ -52,7 +52,7 @@ func getRabbitHostName() string {
 func getRabbitPort() int {
 	portStr := os.Getenv("RABBIT_PORT")
 	if portStr == "" {
-		return 5672
+		return 15672
 	}
 
 	port, _ := strconv.Atoi(portStr)
