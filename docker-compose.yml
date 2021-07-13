@@ -13,6 +13,8 @@ services:
       - rabbitmq
     ports: 
       - "8889:8889"
+    volumes: 
+      - ./scripts/shell/wait-for-it.sh:/root/wait-for-it.sh
     entrypoint: ["./wait-for-it.sh", "rabbitmq:5672", "--", "./api-producer"]
   
   database-service-consumer:
@@ -27,6 +29,8 @@ services:
     depends_on: 
       - postgres
       - rabbitmq
+    volumes: 
+      - ./scripts/shell/wait-for-it.sh:/root/wait-for-it.sh
     entrypoint: ["./wait-for-it.sh", "postgres:5432", "rabbitmq:5672", "--", "./database-service-consumer"]
 
   postgres:

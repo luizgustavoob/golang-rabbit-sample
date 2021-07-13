@@ -15,13 +15,13 @@ build:
 		-t $(API_IMAGE) \
 		--target=build \
 		-f api-producer/Dockerfile \
-		api-producer
+		api-producer/
 
 	docker image build \
 		-t $(DBCONSUMER_IMAGE) \
 		--target=build \
 		-f database-service-consumer/Dockerfile \
-		database-service-consumer
+		database-service-consumer/
 
 .PHONY: image
 image:
@@ -29,13 +29,13 @@ image:
 		-t $(API_IMAGE) \
 		--target=image \
 		-f api-producer/Dockerfile \
-		api-producer
+		api-producer/
 
 	docker image build \
 		-t $(DBCONSUMER_IMAGE) \
 		--target=image \
 		-f database-service-consumer/Dockerfile \
-		database-service-consumer
+		database-service-consumer/
 
 .PHONY: up
 up: image
