@@ -6,4 +6,5 @@ require (
 	github.com/lib/pq v1.10.2
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.0
+	go.uber.org/fx v1.14.2
 )
