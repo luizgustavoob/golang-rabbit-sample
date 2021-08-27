@@ -9,14 +9,15 @@ services:
       RABBIT_PASS: guest
       RABBIT_HOSTNAME: rabbitmq
       RABBIT_PORT: 5672
+      PORT: 8080
     depends_on: 
       - rabbitmq
     ports: 
-      - "8889:8889"
+      - "8080:8080"
     volumes: 
       - ./scripts/shell/wait-for-it.sh:/root/wait-for-it.sh
     entrypoint: ["./wait-for-it.sh", "rabbitmq:5672", "--", "./api-producer"]
-  
+
   database-service-consumer:
     container_name: database-service-consumer
     image: luizgustavoob/golang-rabbit-dbconsumer:latest

@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/database-service-consumer/main.go",
+            "env": {
+                "DATABASE": "host=postgres port=5440 user=postgres password=postgres dbname=mydb sslmode=disable",
+                "RABBIT_USER": "guest",
+                "RABBIT_PASS": "guest",
+                "RABBIT_HOSTNAME": "localhost",
+                "RABBIT_PORT": "5672"
+            }
+        }
+    ]
+}
