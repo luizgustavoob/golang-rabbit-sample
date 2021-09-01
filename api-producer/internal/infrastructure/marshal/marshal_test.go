@@ -15,7 +15,7 @@ func TestMarshal(t *testing.T) {
 	marshaller := marshal.New()
 	assert.NotNil(t, marshaller)
 
-	response, err := marshaller.MarshalValue(&something)
+	response, err := marshaller.SerializeJSON(&something)
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
 }

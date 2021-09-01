@@ -8,7 +8,7 @@ import (
 
 type Decode struct{}
 
-func (d *Decode) DecodeRequestBody(r io.Reader, target interface{}) error {
+func (d *Decode) DecodeJSON(r io.Reader, target interface{}) error {
 	err := render.DecodeJSON(r, target)
 	return err
 }

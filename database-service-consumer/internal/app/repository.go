@@ -1,10 +1,6 @@
 package app
 
 type (
-	Logger interface {
-		Printf(format string, values ...interface{})
-	}
-
 	DB interface {
 		Exec(query string, args ...interface{}) error
 	}

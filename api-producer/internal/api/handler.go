@@ -8,7 +8,7 @@ import (
 
 type (
 	Decoder interface {
-		DecodeRequestBody(r io.Reader, target interface{}) error
+		DecodeJSON(r io.Reader, target interface{}) error
 	}
 
 	Service interface {
@@ -32,7 +32,7 @@ func (h *handler) GetPattern() string {
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var person Person
 
-	if err := h.decoder.DecodeRequestBody(r.Body, &person); err != nil {
+	if err := h.decoder.DecodeJSON(r.Body, &person); err != nil {
 		error := make(map[string]string)
 		error["error"] = err.Error()
 		w.WriteHeader(http.StatusBadRequest)

@@ -6,10 +6,6 @@ import (
 )
 
 type (
-	LoggerHandler interface {
-		Printf(format string, values ...interface{})
-	}
-
 	Decoder interface {
 		DecodeJSON(r io.Reader, target interface{}) error
 	}
@@ -19,7 +15,7 @@ type (
 	}
 
 	handler struct {
-		logger  LoggerHandler
+		logger  Logger
 		decoder Decoder
 		service Service
 	}
@@ -35,7 +31,7 @@ func (h *handler) HandleMessage(message []byte) error {
 	return h.service.AddPerson(&person)
 }
 
-func NewHandler(logger LoggerHandler, decoder Decoder, service Service) *handler {
+func NewHandler(logger Logger, decoder Decoder, service Service) *handler {
 	return &handler{
 		logger:  logger,
 		decoder: decoder,

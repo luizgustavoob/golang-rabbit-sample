@@ -10,7 +10,7 @@ const (
 
 type (
 	Marshaller interface {
-		MarshalValue(obj interface{}) ([]byte, error)
+		SerializeJSON(obj interface{}) ([]byte, error)
 	}
 
 	Logger interface {
@@ -36,14 +36,14 @@ func (s *service) AddPerson(person *Person) (*Person, error) {
 		return nil, errors.New("person contains invalid fields")
 	}
 
-	personBytes, err := s.marshaller.MarshalValue(&person)
+	personJs, err := s.marshaller.SerializeJSON(&person)
 	if err != nil {
 		s.logger.Printf("Failed in marshaling person: %s", err.Error())
 		return nil, err
 	}
 
 	s.logger.Println("Sending person to queue..")
-	err = s.publisher.Publish(queue, string(personBytes))
+	err = s.publisher.Publish(queue, string(personJs))
 	if err != nil {
 		s.logger.Printf("Failed to publish message in queue: %s", err.Error())
 		return nil, err

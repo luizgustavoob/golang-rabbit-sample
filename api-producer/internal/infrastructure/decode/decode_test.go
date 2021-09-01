@@ -20,7 +20,7 @@ func TestDecode(t *testing.T) {
 	js, _ := json.Marshal(&something)
 	target := make(map[string]string)
 
-	err := decoder.DecodeRequestBody(bytes.NewReader(js), &target)
+	err := decoder.DecodeJSON(bytes.NewReader(js), &target)
 	assert.Nil(t, err)
 	assert.Equal(t, "content", target["chave"])
 }

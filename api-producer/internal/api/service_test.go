@@ -32,7 +32,7 @@ func TestService_AddPerson(t *testing.T) {
 		publisher := new(apimocks.PublisherMock)
 		publisher.On("Publish", mock.Anything, mock.Anything).Return(nil)
 		marshaller := new(apimocks.MarshalMock)
-		marshaller.On("MarshalValue", mock.Anything).Return(personBytes, nil)
+		marshaller.On("SerializeJSON", mock.Anything).Return(personBytes, nil)
 		service := api.NewService(publisher, marshaller, logger)
 
 		p, err := service.AddPerson(person)
@@ -63,7 +63,7 @@ func TestService_AddPerson(t *testing.T) {
 
 	t.Run("should return error because unexpected behavior on marshaller", func(t *testing.T) {
 		marshaller := new(apimocks.MarshalMock)
-		marshaller.On("MarshalValue", mock.Anything).Return(nil, errors.New("marshal error"))
+		marshaller.On("SerializeJSON", mock.Anything).Return(nil, errors.New("marshal error"))
 		service := api.NewService(nil, marshaller, logger)
 
 		p, err := service.AddPerson(&api.Person{
@@ -91,7 +91,7 @@ func TestService_AddPerson(t *testing.T) {
 		publisher := new(apimocks.PublisherMock)
 		publisher.On("Publish", mock.Anything, mock.Anything).Return(errors.New("publisher error"))
 		marshaller := new(apimocks.MarshalMock)
-		marshaller.On("MarshalValue", mock.Anything).Return(personBytes, nil)
+		marshaller.On("SerializeJSON", mock.Anything).Return(personBytes, nil)
 		service := api.NewService(publisher, marshaller, logger)
 
 		p, err := service.AddPerson(person)

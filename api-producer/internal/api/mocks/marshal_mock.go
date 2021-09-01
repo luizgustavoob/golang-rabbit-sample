@@ -6,7 +6,7 @@ type MarshalMock struct {
 	mock.Mock
 }
 
-func (m *MarshalMock) MarshalValue(obj interface{}) ([]byte, error) {
+func (m *MarshalMock) SerializeJSON(obj interface{}) ([]byte, error) {
 	args := m.Called(obj)
 	arg0 := args.Get(0)
 	if arg0 != nil {

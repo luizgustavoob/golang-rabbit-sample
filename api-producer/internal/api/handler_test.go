@@ -29,7 +29,7 @@ func TestHandler(t *testing.T) {
 		service := new(apimocks.ServiceMock)
 		service.On("AddPerson", mock.Anything).Return(person, nil)
 		decoder := new(apimocks.DecodeMock)
-		decoder.On("DecodeRequestBody", mock.Anything, mock.Anything).Return(nil)
+		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(nil)
 		handler := api.NewHandler(service, decoder)
 
 		res := httptest.NewRecorder()
@@ -41,7 +41,7 @@ func TestHandler(t *testing.T) {
 
 	t.Run("should return bad request error", func(t *testing.T) {
 		decoder := new(apimocks.DecodeMock)
-		decoder.On("DecodeRequestBody", mock.Anything, mock.Anything).Return(errors.New("decode error"))
+		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(errors.New("decode error"))
 		handler := api.NewHandler(nil, decoder)
 
 		res := httptest.NewRecorder()
@@ -57,7 +57,7 @@ func TestHandler(t *testing.T) {
 		service := new(apimocks.ServiceMock)
 		service.On("AddPerson", mock.Anything).Return(nil, errors.New("service error"))
 		decoder := new(apimocks.DecodeMock)
-		decoder.On("DecodeRequestBody", mock.Anything, mock.Anything).Return(nil)
+		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(nil)
 		handler := api.NewHandler(service, decoder)
 
 		res := httptest.NewRecorder()
