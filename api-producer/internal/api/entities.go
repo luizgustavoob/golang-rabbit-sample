@@ -5,10 +5,9 @@ import (
 	"time"
 )
 
-const (
-	size    = 8
-	simbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-+"
-)
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 type Person struct {
 	ID    string `json:"id,omitempty"`
@@ -18,11 +17,12 @@ type Person struct {
 	Phone string `json:"telefone,omitempty"`
 }
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 func (p *Person) GenerateID() {
+	const (
+		size    = 8
+		simbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-+"
+	)
+
 	newID := func() string {
 		id := make([]byte, size)
 		for i := range id {

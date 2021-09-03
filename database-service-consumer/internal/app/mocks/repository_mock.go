@@ -1,4 +1,4 @@
-package appmocks
+package mocks
 
 import (
 	"github.com/golang-rabbit-sample/database-service-consumer/internal/app"

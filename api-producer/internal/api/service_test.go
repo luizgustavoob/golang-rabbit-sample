@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/golang-rabbit-sample/api-producer/internal/api"
+	"github.com/golang-rabbit-sample/api-producer/internal/api/mocks"
 
-	apimocks "github.com/golang-rabbit-sample/api-producer/internal/api/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -26,13 +26,14 @@ func TestService_AddPerson(t *testing.T) {
 			Email: "email@email.com",
 			Phone: "12345678",
 		}
-
 		personBytes, _ := json.Marshal(&person)
 
-		publisher := new(apimocks.PublisherMock)
+		publisher := new(mocks.PublisherMock)
 		publisher.On("Publish", mock.Anything, mock.Anything).Return(nil)
-		marshaller := new(apimocks.MarshalMock)
+
+		marshaller := new(mocks.MarshalMock)
 		marshaller.On("SerializeJSON", mock.Anything).Return(personBytes, nil)
+
 		service := api.NewService(publisher, marshaller, logger)
 
 		p, err := service.AddPerson(person)
@@ -45,6 +46,9 @@ func TestService_AddPerson(t *testing.T) {
 		assert.Equal(t, "email@email.com", p.Email)
 		assert.Equal(t, "12345678", p.Phone)
 		assert.Contains(t, buffer.String(), "success")
+
+		publisher.AssertExpectations(t)
+		marshaller.AssertExpectations(t)
 	})
 
 	t.Run("should return error because invalid fields", func(t *testing.T) {
@@ -62,8 +66,9 @@ func TestService_AddPerson(t *testing.T) {
 	})
 
 	t.Run("should return error because unexpected behavior on marshaller", func(t *testing.T) {
-		marshaller := new(apimocks.MarshalMock)
+		marshaller := new(mocks.MarshalMock)
 		marshaller.On("SerializeJSON", mock.Anything).Return(nil, errors.New("marshal error"))
+
 		service := api.NewService(nil, marshaller, logger)
 
 		p, err := service.AddPerson(&api.Person{
@@ -76,6 +81,8 @@ func TestService_AddPerson(t *testing.T) {
 		assert.Nil(t, p)
 		assert.NotNil(t, err)
 		assert.Equal(t, "marshal error", err.Error())
+
+		marshaller.AssertExpectations(t)
 	})
 
 	t.Run("should return error because unexpected behavior on publisher", func(t *testing.T) {
@@ -88,15 +95,20 @@ func TestService_AddPerson(t *testing.T) {
 
 		personBytes, _ := json.Marshal(&person)
 
-		publisher := new(apimocks.PublisherMock)
+		publisher := new(mocks.PublisherMock)
 		publisher.On("Publish", mock.Anything, mock.Anything).Return(errors.New("publisher error"))
-		marshaller := new(apimocks.MarshalMock)
+
+		marshaller := new(mocks.MarshalMock)
 		marshaller.On("SerializeJSON", mock.Anything).Return(personBytes, nil)
+
 		service := api.NewService(publisher, marshaller, logger)
 
 		p, err := service.AddPerson(person)
 		assert.Nil(t, p)
 		assert.NotNil(t, err)
 		assert.Equal(t, "publisher error", err.Error())
+
+		publisher.AssertExpectations(t)
+		marshaller.AssertExpectations(t)
 	})
 }

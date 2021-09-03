@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/golang-rabbit-sample/database-service-consumer/internal/app"
-	appmocks "github.com/golang-rabbit-sample/database-service-consumer/internal/app/mocks"
+	"github.com/golang-rabbit-sample/database-service-consumer/internal/app/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -18,7 +18,7 @@ func TestRepository(t *testing.T) {
 	logger := log.New(buffer, "", log.LstdFlags)
 
 	t.Run("should exec with success", func(t *testing.T) {
-		dbMock := new(appmocks.DatabaseMock)
+		dbMock := new(mocks.DatabaseMock)
 		dbMock.On("Exec", mock.Anything, mock.Anything).Return(nil)
 		repo := app.NewRepository(logger, dbMock)
 
@@ -34,7 +34,7 @@ func TestRepository(t *testing.T) {
 	})
 
 	t.Run("should return error on exec", func(t *testing.T) {
-		dbMock := new(appmocks.DatabaseMock)
+		dbMock := new(mocks.DatabaseMock)
 		dbMock.On("Exec", mock.Anything, mock.Anything).Return(errors.New("db error"))
 		repo := app.NewRepository(logger, dbMock)
 

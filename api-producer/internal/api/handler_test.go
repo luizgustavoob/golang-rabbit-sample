@@ -10,12 +10,21 @@ import (
 	"testing"
 
 	"github.com/golang-rabbit-sample/api-producer/internal/api"
-	apimocks "github.com/golang-rabbit-sample/api-producer/internal/api/mocks"
+	"github.com/golang-rabbit-sample/api-producer/internal/api/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler(t *testing.T) {
+
+	t.Run("should create handler", func(t *testing.T) {
+		service := new(mocks.ServiceMock)
+		decoder := new(mocks.DecodeMock)
+		handler := api.NewHandler(service, decoder)
+
+		assert.Equal(t, "/people", handler.GetPattern())
+		assert.Equal(t, http.MethodPost, handler.GetMethod())
+	})
 
 	t.Run("should return success", func(t *testing.T) {
 		person := &api.Person{
@@ -26,10 +35,13 @@ func TestHandler(t *testing.T) {
 			Phone: "12345678",
 		}
 		personBytes, _ := json.Marshal(person)
-		service := new(apimocks.ServiceMock)
+
+		service := new(mocks.ServiceMock)
 		service.On("AddPerson", mock.Anything).Return(person, nil)
-		decoder := new(apimocks.DecodeMock)
+
+		decoder := new(mocks.DecodeMock)
 		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(nil)
+
 		handler := api.NewHandler(service, decoder)
 
 		res := httptest.NewRecorder()
@@ -37,11 +49,15 @@ func TestHandler(t *testing.T) {
 
 		handler.ServeHTTP(res, req)
 		assert.Equal(t, http.StatusCreated, res.Code)
+
+		decoder.AssertExpectations(t)
+		service.AssertExpectations(t)
 	})
 
 	t.Run("should return bad request error", func(t *testing.T) {
-		decoder := new(apimocks.DecodeMock)
+		decoder := new(mocks.DecodeMock)
 		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(errors.New("decode error"))
+
 		handler := api.NewHandler(nil, decoder)
 
 		res := httptest.NewRecorder()
@@ -51,13 +67,17 @@ func TestHandler(t *testing.T) {
 
 		body, _ := ioutil.ReadAll(res.Body)
 		assert.Contains(t, string(body), "decode error")
+
+		decoder.AssertExpectations(t)
 	})
 
 	t.Run("should return internal server error", func(t *testing.T) {
-		service := new(apimocks.ServiceMock)
+		service := new(mocks.ServiceMock)
 		service.On("AddPerson", mock.Anything).Return(nil, errors.New("service error"))
-		decoder := new(apimocks.DecodeMock)
+
+		decoder := new(mocks.DecodeMock)
 		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(nil)
+
 		handler := api.NewHandler(service, decoder)
 
 		res := httptest.NewRecorder()
@@ -67,5 +87,8 @@ func TestHandler(t *testing.T) {
 
 		body, _ := ioutil.ReadAll(res.Body)
 		assert.Contains(t, string(body), "service error")
+
+		decoder.AssertExpectations(t)
+		service.AssertExpectations(t)
 	})
 }

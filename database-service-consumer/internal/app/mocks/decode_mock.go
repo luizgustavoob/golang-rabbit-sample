@@ -1,4 +1,4 @@
-package appmocks
+package mocks
 
 import (
 	"io"

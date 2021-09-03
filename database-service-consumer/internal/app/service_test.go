@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang-rabbit-sample/database-service-consumer/internal/app"
-	appmocks "github.com/golang-rabbit-sample/database-service-consumer/internal/app/mocks"
+	"github.com/golang-rabbit-sample/database-service-consumer/internal/app/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -13,7 +13,7 @@ import (
 func TestService(t *testing.T) {
 
 	t.Run("should return success", func(t *testing.T) {
-		repo := new(appmocks.RepositoryMock)
+		repo := new(mocks.RepositoryMock)
 		repo.On("AddPerson", mock.Anything).Return(nil)
 		srv := app.NewService(repo)
 
@@ -29,7 +29,7 @@ func TestService(t *testing.T) {
 	})
 
 	t.Run("should return error", func(t *testing.T) {
-		repo := new(appmocks.RepositoryMock)
+		repo := new(mocks.RepositoryMock)
 		repo.On("AddPerson", mock.Anything).Return(errors.New("repo error"))
 		srv := app.NewService(repo)
 

@@ -1,4 +1,4 @@
-package apimocks
+package mocks
 
 import (
 	"github.com/golang-rabbit-sample/api-producer/internal/api"

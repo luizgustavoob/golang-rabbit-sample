@@ -23,11 +23,12 @@ type (
 
 func (h *handler) HandleMessage(message []byte) error {
 	var person Person
-	err := h.decoder.DecodeJSON(bytes.NewReader(message), &person)
-	if err != nil {
+
+	if err := h.decoder.DecodeJSON(bytes.NewReader(message), &person); err != nil {
 		h.logger.Printf("Error reading message: %s", err.Error())
 		return err
 	}
+
 	return h.service.AddPerson(&person)
 }
 
