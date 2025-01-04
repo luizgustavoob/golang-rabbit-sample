@@ -1,4 +1,3 @@
-version: '3.9'
 
 services:
   api-producer:
@@ -6,6 +5,7 @@ services:
     build:
       context: ./api-producer
       dockerfile: Dockerfile
+      target: final
     environment:
       RABBIT_USER: guest
       RABBIT_PASS: guest
@@ -13,18 +13,19 @@ services:
       RABBIT_PORT: 5672
       PORT: 8080
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8080:8080"
-    volumes:
-      - ./scripts/shell/wait-for-it.sh:/root/wait-for-it.sh
-    entrypoint: ["./wait-for-it.sh", "rabbitmq:5672", "--", "./api-producer"]
+    networks:
+      - app_network
 
   database-service-consumer:
     container_name: database-service-consumer
     build:
       context: ./database-service-consumer
       dockerfile: Dockerfile
+      target: final
     environment:
       DATABASE: host=postgres port=5432 user=postgres password=postgres dbname=mydb sslmode=disable
       RABBIT_USER: guest
@@ -32,15 +33,17 @@ services:
       RABBIT_HOSTNAME: rabbitmq
       RABBIT_PORT: 5672
     depends_on:
-      - postgres
-      - rabbitmq
-    volumes:
-      - ./scripts/shell/wait-for-it.sh:/root/wait-for-it.sh
-    entrypoint: ["./wait-for-it.sh", "postgres:5432", "rabbitmq:5672", "--", "./database-service-consumer"]
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app_network
 
   postgres:
-    image: postgres:16-alpine
     container_name: postgres
+    image: postgres:16-alpine
+    restart: always
     volumes:
       - ./scripts/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     environment:
@@ -48,11 +51,18 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=mydb
     ports:
-      - "5440:5432"
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
 
   rabbitmq:
-    image: rabbitmq:4.0-management
     container_name: rabbitmq
+    image: rabbitmq:4.0-management
     hostname: rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=guest
@@ -60,3 +70,13 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+networks:
+  app_network:
