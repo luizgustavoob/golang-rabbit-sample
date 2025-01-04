@@ -5,20 +5,20 @@ DBCONSUMER_IMAGE = luizgustavoob/golang-rabbit-dbconsumer:latest
 image:
 	docker image build \
 		-t $(API_IMAGE) \
-		--target=image \
+		--target=final \
 		-f api-producer/Dockerfile \
 		api-producer/
 
 	docker image build \
 		-t $(DBCONSUMER_IMAGE) \
-		--target=image \
+		--target=final \
 		-f database-service-consumer/Dockerfile \
 		database-service-consumer/
 
 .PHONY: up
-up: image
-	docker-compose up -d
+up:
+	docker compose up -d
 
 .PHONY: down
 down:
-	docker-compose down
+	docker compose down
