@@ -27,16 +27,16 @@ type (
 )
 
 func New(params HandlerParams) http.Handler {
-	r := chi.NewRouter()
+	router := chi.NewRouter()
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
 
 	for _, h := range params.Handlers {
-		r.Method(h.GetMethod(), h.GetPattern(), h)
+		router.Method(h.GetMethod(), h.GetPattern(), h)
 	}
 
-	return r
+	return router
 }

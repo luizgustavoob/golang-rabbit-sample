@@ -1,22 +1,20 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
+
+	"go.uber.org/fx"
 
 	"github.com/golang-rabbit-sample/api-producer/internal/api"
 	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure"
-	"go.uber.org/fx"
 )
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+
 	fx.New(
-		fx.Provide(newLogger),
 		api.Module,
 		infrastructure.Module,
 	).Run()
-}
-
-func newLogger() *log.Logger {
-	return log.New(os.Stdout, "", log.LstdFlags)
 }

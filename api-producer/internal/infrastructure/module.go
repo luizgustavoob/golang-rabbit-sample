@@ -3,45 +3,42 @@ package infrastructure
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/decode"
-	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/handler"
-	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/marshal"
-	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/rabbit"
 	"go.uber.org/fx"
+
+	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/handler"
+	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/rabbit"
 )
 
-func startServer(lc fx.Lifecycle, handler http.Handler, logger *log.Logger) {
+func startServer(lc fx.Lifecycle, router http.Handler) {
 	port := os.Getenv("PORT")
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", port),
-		Handler:      handler,
+		Handler:      router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			logger.Printf("Starting server at port %s\n", port)
+			slog.Info("Starting server", slog.String("port", port))
 			go srv.ListenAndServe()
 			return nil
 		},
 
 		OnStop: func(ctx context.Context) error {
-			logger.Println("Stopping server...")
+			slog.Info("Stopping server...")
 			return srv.Shutdown(ctx)
 		},
 	})
 }
 
 var Module = fx.Options(
-	marshal.Module,
-	decode.Module,
 	rabbit.Module,
 	handler.Module,
 	fx.Invoke(startServer),

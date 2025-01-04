@@ -2,62 +2,41 @@ package api
 
 import (
 	"errors"
+	"log/slog"
+
+	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/rabbit"
 )
 
-const (
-	queue = "person-queue"
-)
+const queue = "person-queue"
 
-type (
-	Marshaller interface {
-		SerializeJSON(obj interface{}) ([]byte, error)
-	}
+var ErrInvalidPerson = errors.New("person contains invalid fields")
 
-	Logger interface {
-		Printf(format string, values ...interface{})
-		Println(values ...interface{})
-	}
+type service struct {
+	publisher rabbit.Publisher
+}
 
-	Publisher interface {
-		Publish(queueName string, message string) error
+func NewService(publisher rabbit.Publisher) *service {
+	return &service{
+		publisher: publisher,
 	}
-
-	service struct {
-		publisher  Publisher
-		marshaller Marshaller
-		logger     Logger
-	}
-)
+}
 
 func (s *service) AddPerson(person *Person) (*Person, error) {
 	person.GenerateID()
 
 	if !person.IsValid() {
-		return nil, errors.New("person contains invalid fields")
+		return nil, ErrInvalidPerson
 	}
 
-	personJs, err := s.marshaller.SerializeJSON(&person)
+	slog.Debug("Sending person to queue..")
+
+	err := s.publisher.Publish(queue, person)
 	if err != nil {
-		s.logger.Printf("Failed in marshaling person: %s", err.Error())
+		slog.Error("Error publishing message in queue", slog.String("error", err.Error()))
 		return nil, err
 	}
 
-	s.logger.Println("Sending person to queue..")
-	err = s.publisher.Publish(queue, string(personJs))
-	if err != nil {
-		s.logger.Printf("Failed to publish message in queue: %s", err.Error())
-		return nil, err
-	}
-
-	s.logger.Println("success")
+	slog.Info("SUCCESS. Person has been published")
 
 	return person, nil
-}
-
-func NewService(publisher Publisher, marshaller Marshaller, logger Logger) *service {
-	return &service{
-		publisher:  publisher,
-		marshaller: marshaller,
-		logger:     logger,
-	}
 }

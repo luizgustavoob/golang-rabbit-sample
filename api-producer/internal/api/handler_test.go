@@ -4,29 +4,29 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/golang-rabbit-sample/api-producer/internal/api"
 	"github.com/golang-rabbit-sample/api-producer/internal/api/mocks"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler(t *testing.T) {
-
 	t.Run("should create handler", func(t *testing.T) {
-		service := new(mocks.ServiceMock)
-		decoder := new(mocks.DecodeMock)
-		handler := api.NewHandler(service, decoder)
+		service := mocks.NewService(t)
+		handler := api.NewHandler(service)
 
 		assert.Equal(t, "/people", handler.GetPattern())
 		assert.Equal(t, http.MethodPost, handler.GetMethod())
 	})
 
-	t.Run("should return success", func(t *testing.T) {
+	t.Run("should return status created", func(t *testing.T) {
 		person := &api.Person{
 			ID:    "id",
 			Name:  "name",
@@ -34,61 +34,64 @@ func TestHandler(t *testing.T) {
 			Email: "email@email.com",
 			Phone: "12345678",
 		}
-		personBytes, _ := json.Marshal(person)
 
-		service := new(mocks.ServiceMock)
-		service.On("AddPerson", mock.Anything).Return(person, nil)
+		service := mocks.NewService(t)
+		service.On("AddPerson", mock.MatchedBy(func(p *api.Person) bool {
+			return p.Name == person.Name && p.Age == person.Age &&
+				p.Email == person.Email && p.Phone == person.Phone
+		})).Return(person, nil)
 
-		decoder := new(mocks.DecodeMock)
-		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(nil)
-
-		handler := api.NewHandler(service, decoder)
+		personJS, err := json.Marshal(person)
+		require.NoError(t, err)
 
 		res := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/people", bytes.NewReader(personBytes))
 
+		req, err := http.NewRequest("POST", "/people", bytes.NewReader(personJS))
+		require.NoError(t, err)
+
+		handler := api.NewHandler(service)
 		handler.ServeHTTP(res, req)
 		assert.Equal(t, http.StatusCreated, res.Code)
-
-		decoder.AssertExpectations(t)
-		service.AssertExpectations(t)
 	})
 
-	t.Run("should return bad request error", func(t *testing.T) {
-		decoder := new(mocks.DecodeMock)
-		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(errors.New("decode error"))
-
-		handler := api.NewHandler(nil, decoder)
-
+	t.Run("should return status bad request", func(t *testing.T) {
 		res := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/people", nil)
+		req, _ := http.NewRequest("POST", "/people", strings.NewReader(`invalid`))
+
+		handler := api.NewHandler(nil)
 		handler.ServeHTTP(res, req)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
+	})
 
-		body, _ := ioutil.ReadAll(res.Body)
-		assert.Contains(t, string(body), "decode error")
+	t.Run("should return status bad request due to invalid field", func(t *testing.T) {
+		service := mocks.NewService(t)
+		service.On("AddPerson", mock.MatchedBy(func(p *api.Person) bool {
+			return p.Name == "" && p.Age == 29 && p.Email == "abc@email.com" && p.Phone == "1234"
+		})).Return(nil, api.ErrInvalidPerson)
 
-		decoder.AssertExpectations(t)
+		res := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/people",
+			strings.NewReader(`{"nome":"","idade":29,"email":"abc@email.com","telefone":"1234"}`),
+		)
+
+		handler := api.NewHandler(service)
+		handler.ServeHTTP(res, req)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
 	})
 
 	t.Run("should return internal server error", func(t *testing.T) {
-		service := new(mocks.ServiceMock)
-		service.On("AddPerson", mock.Anything).Return(nil, errors.New("service error"))
-
-		decoder := new(mocks.DecodeMock)
-		decoder.On("DecodeJSON", mock.Anything, mock.Anything).Return(nil)
-
-		handler := api.NewHandler(service, decoder)
+		service := mocks.NewService(t)
+		service.On("AddPerson", mock.MatchedBy(func(p *api.Person) bool {
+			return p.Name == "fulano" && p.Age == 29 && p.Email == "abc@email.com" && p.Phone == "1234"
+		})).Return(nil, errors.New("something wrong has happened"))
 
 		res := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/people", nil)
+		req, _ := http.NewRequest("POST", "/people",
+			strings.NewReader(`{"nome":"fulano","idade":29,"email":"abc@email.com","telefone":"1234"}`),
+		)
+
+		handler := api.NewHandler(service)
 		handler.ServeHTTP(res, req)
 		assert.Equal(t, http.StatusInternalServerError, res.Code)
-
-		body, _ := ioutil.ReadAll(res.Body)
-		assert.Contains(t, string(body), "service error")
-
-		decoder.AssertExpectations(t)
-		service.AssertExpectations(t)
 	})
 }

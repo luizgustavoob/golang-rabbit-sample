@@ -1,13 +1,10 @@
 package api
 
 import (
+	"encoding/json"
 	"math/rand"
 	"time"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 type Person struct {
 	ID    string `json:"id,omitempty"`
@@ -24,9 +21,10 @@ func (p *Person) GenerateID() {
 	)
 
 	newID := func() string {
+		seed := rand.New(rand.NewSource(time.Now().UnixNano()))
 		id := make([]byte, size)
 		for i := range id {
-			id[i] = simbols[rand.Intn(len(simbols))]
+			id[i] = simbols[seed.Intn(len(simbols))]
 		}
 		return string(id)
 	}
@@ -37,4 +35,8 @@ func (p *Person) GenerateID() {
 func (p *Person) IsValid() bool {
 	return (p.ID != "" && p.Name != "" &&
 		p.Age > 0 && p.Email != "" && p.Phone != "")
+}
+
+func (p *Person) Serialize() ([]byte, error) {
+	return json.Marshal(p)
 }
