@@ -16,7 +16,7 @@ image:
 		database-service-consumer/
 
 .PHONY: up
-up: image
+up:
 	docker-compose up -d
 
 .PHONY: down

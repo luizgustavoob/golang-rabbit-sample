@@ -12,5 +12,5 @@ Após baixar o repositório, deve-se acessar a pasta raiz do projeto e executar
 ```
 que os serviços serão iniciados.
 
-Para consumir, envie um POST para o endpoit `/people` e no corpo preencha os atributos: `id, nome, email e telefone`.
+Para consumir, envie um POST para o endpoit `/people` e no corpo preencha os atributos: `nome, idade, email e telefone`.
 A API, após receber a requisição, enviará essa mensagem para um segundo serviço, que realizará a persistência em um banco PostgreSQL.
