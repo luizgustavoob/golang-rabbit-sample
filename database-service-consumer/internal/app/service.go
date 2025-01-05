@@ -19,18 +19,13 @@ func NewService(repository Repository) *service {
 }
 
 func (s *service) AddPerson(person *Person) error {
-	return s.repository.AddPerson(person)
-}
+	slog.Debug("Adding person...")
 
-func AddPersonFn(service *service) func(p *Person) {
-	return func(p *Person) {
-		slog.Debug("Adding person...")
-
-		if err := service.AddPerson(p); err != nil {
-			slog.Error("Error adding person", slog.String("error", err.Error()))
-			return
-		}
-
-		slog.Info("SUCCESS. Person has been added.")
+	if err := s.repository.AddPerson(person); err != nil {
+		return err
 	}
+
+	slog.Info("SUCCESS. Person has been added.")
+
+	return nil
 }

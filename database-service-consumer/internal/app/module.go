@@ -24,6 +24,6 @@ func newService(repository *repository) *service {
 
 func newConsumer(service *service) rabbit.ConsumersOut {
 	return rabbit.ConsumersOut{
-		Consumer: rabbit.NewConsumer(rabbit.PersonQueue.String(), AddPersonFn(service)),
+		Consumer: rabbit.NewConsumer(rabbit.PersonQueue.String(), service.AddPerson),
 	}
 }

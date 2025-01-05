@@ -12,7 +12,7 @@ type (
 		Start(*amqp.Channel)
 	}
 
-	Processor[T any] func(T)
+	Processor[T any] func(T) error
 
 	consumer[T any] struct {
 		queueName string
@@ -43,6 +43,7 @@ func (c *consumer[T]) Start(ch *amqp.Channel) {
 			return
 		}
 
+		// @TODO: Worker pool
 		for msg := range msgs {
 			var msgIn T
 			if err := json.Unmarshal(msg.Body, &msgIn); err != nil {
@@ -50,7 +51,11 @@ func (c *consumer[T]) Start(ch *amqp.Channel) {
 				return
 			}
 
-			go c.processor(msgIn)
+			go func() {
+				if err := c.processor(msgIn); err != nil {
+					slog.Error("Error processing msg", slog.String("error", err.Error()))
+				}
+			}()
 		}
 	}()
 }
