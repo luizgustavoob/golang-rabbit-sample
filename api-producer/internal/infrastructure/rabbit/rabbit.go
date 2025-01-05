@@ -12,51 +12,34 @@ type (
 	}
 
 	Publisher interface {
-		Publish(queue string, msg Serializable) error
+		Publish(queue string, message Serializable) error
 	}
 
-	Rabbit struct {
-		connection *amqp.Connection
+	publisher struct {
+		queueName string
+		ch        *amqp.Channel
 	}
 )
 
-func New(connection *amqp.Connection) *Rabbit {
-	return &Rabbit{
-		connection: connection,
+func NewPublisher(queueName string, ch *amqp.Channel) *publisher {
+	return &publisher{
+		queueName: queueName,
+		ch:        ch,
 	}
 }
 
-func (r *Rabbit) Publish(queueName string, message Serializable) error {
-	ch, err := r.connection.Channel()
-	if err != nil {
-		slog.Error("Error opening the channel", slog.String("error", err.Error()))
-		return err
-	}
-
-	queue, err := ch.QueueDeclare(
-		queueName, // name
-		false,     // durable
-		false,     // autoDelete
-		false,     // exclusive
-		false,     // noWait
-		nil,       // args
-	)
-	if err != nil {
-		slog.Error("Error declaring queue", slog.String("error", err.Error()))
-		return err
-	}
-
+func (p *publisher) Publish(queueName string, message Serializable) error {
 	msg, err := message.Serialize()
 	if err != nil {
 		slog.Error("Error serializing msg", slog.String("error", err.Error()))
 		return err
 	}
 
-	err = ch.Publish(
-		"",         // exchange
-		queue.Name, // key
-		false,      // mandatory
-		false,      // immediate
+	err = p.ch.Publish(
+		"",        // exchange
+		queueName, // key
+		false,     // mandatory
+		false,     // immediate
 		amqp.Publishing{ // message
 			ContentType: "application/json",
 			Body:        msg,

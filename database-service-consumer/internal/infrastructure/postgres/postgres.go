@@ -14,7 +14,7 @@ func New(db *sql.DB) *Postgres {
 	}
 }
 
-func (p *Postgres) Exec(query string, args ...interface{}) error {
+func (p *Postgres) Exec(query string, args ...any) error {
 	_, err := p.db.Exec(query, args...)
 	return err
 }

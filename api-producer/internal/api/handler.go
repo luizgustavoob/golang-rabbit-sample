@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"github.com/go-chi/render"
 )
 
 type (
@@ -34,8 +32,7 @@ func (h *handler) GetPattern() string {
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var person Person
-
-	if err := render.DecodeJSON(r.Body, &person); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&person); err != nil {
 		writeErr(w, http.StatusBadRequest, err)
 		return
 	}

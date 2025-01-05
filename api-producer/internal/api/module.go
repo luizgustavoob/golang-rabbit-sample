@@ -7,8 +7,18 @@ import (
 	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/rabbit"
 )
 
-func newService(publisher *rabbit.Rabbit) *service {
-	return NewService(publisher)
+var Module = fx.Provide(
+	newService,
+	newHandler,
+)
+
+type ServiceParams struct {
+	fx.In
+	Publisher rabbit.Publisher `name:"person-publisher"`
+}
+
+func newService(params ServiceParams) *service {
+	return NewService(params.Publisher)
 }
 
 func newHandler(service *service) app_handler.HandlerResult {
@@ -16,8 +26,3 @@ func newHandler(service *service) app_handler.HandlerResult {
 		Handler: NewHandler(service),
 	}
 }
-
-var Module = fx.Provide(
-	newService,
-	newHandler,
-)

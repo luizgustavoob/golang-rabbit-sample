@@ -1,35 +1,35 @@
 package app
 
+import "log/slog"
+
 type (
 	DB interface {
-		Exec(query string, args ...interface{}) error
+		Exec(query string, args ...any) error
 	}
 
 	repository struct {
-		logger Logger
-		db     DB
+		db DB
 	}
 )
+
+func NewRepository(db DB) *repository {
+	return &repository{
+		db: db,
+	}
+}
 
 func (r *repository) AddPerson(person *Person) error {
 	err := r.db.Exec(`INSERT INTO person(id, nome, idade, email, telefone) VALUES ($1, $2, $3, $4, $5)`,
 		&person.ID,
-		&person.Nome,
-		&person.Idade,
+		&person.Name,
+		&person.Age,
 		&person.Email,
-		&person.Telefone)
-
+		&person.Phone,
+	)
 	if err != nil {
-		r.logger.Printf("Failed to insert person: %s\n", err.Error())
+		slog.Error("Error inserting person", slog.String("error", err.Error()))
 		return err
 	}
 
 	return nil
-}
-
-func NewRepository(logger Logger, db DB) *repository {
-	return &repository{
-		logger: logger,
-		db:     db,
-	}
 }

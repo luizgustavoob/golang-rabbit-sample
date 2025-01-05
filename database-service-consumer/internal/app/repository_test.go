@@ -1,9 +1,7 @@
 package app_test
 
 import (
-	"bytes"
 	"errors"
-	"log"
 	"testing"
 
 	"github.com/golang-rabbit-sample/database-service-consumer/internal/app"
@@ -13,41 +11,39 @@ import (
 )
 
 func TestRepository(t *testing.T) {
-
-	buffer := &bytes.Buffer{}
-	logger := log.New(buffer, "", log.LstdFlags)
-
 	t.Run("should exec with success", func(t *testing.T) {
-		dbMock := new(mocks.DatabaseMock)
-		dbMock.On("Exec", mock.Anything, mock.Anything).Return(nil)
-		repo := app.NewRepository(logger, dbMock)
+		person := &app.Person{
+			ID:    "id",
+			Name:  "nome",
+			Age:   25,
+			Email: "email@gmail.com",
+			Phone: "12345678",
+		}
 
-		err := repo.AddPerson(&app.Person{
-			ID:       "id",
-			Nome:     "nome",
-			Idade:    25,
-			Email:    "email@gmail.com",
-			Telefone: "12345678",
-		})
+		dbMock := mocks.NewDB(t)
+		dbMock.On("Exec", mock.Anything, &person.ID, &person.Name, &person.Age, &person.Email, &person.Phone).Return(nil)
 
-		assert.Nil(t, err)
+		repo := app.NewRepository(dbMock)
+		err := repo.AddPerson(person)
+
+		assert.NoError(t, err)
 	})
 
 	t.Run("should return error on exec", func(t *testing.T) {
-		dbMock := new(mocks.DatabaseMock)
-		dbMock.On("Exec", mock.Anything, mock.Anything).Return(errors.New("db error"))
-		repo := app.NewRepository(logger, dbMock)
+		person := &app.Person{
+			ID:    "id",
+			Name:  "nome",
+			Age:   25,
+			Email: "email@gmail.com",
+			Phone: "12345678",
+		}
 
-		err := repo.AddPerson(&app.Person{
-			ID:       "id",
-			Nome:     "nome",
-			Idade:    25,
-			Email:    "email@gmail.com",
-			Telefone: "12345678",
-		})
+		dbMock := mocks.NewDB(t)
+		dbMock.On("Exec", mock.Anything, &person.ID, &person.Name, &person.Age, &person.Email, &person.Phone).Return(errors.New("db error"))
 
-		assert.NotNil(t, err)
-		assert.Equal(t, "db error", err.Error())
-		assert.Contains(t, buffer.String(), "Failed to insert")
+		repo := app.NewRepository(dbMock)
+		err := repo.AddPerson(person)
+
+		assert.Error(t, err)
 	})
 }

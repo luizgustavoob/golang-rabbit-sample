@@ -7,8 +7,6 @@ import (
 	"github.com/golang-rabbit-sample/api-producer/internal/infrastructure/rabbit"
 )
 
-const queue = "person-queue"
-
 var ErrInvalidPerson = errors.New("person contains invalid fields")
 
 type service struct {
@@ -30,7 +28,7 @@ func (s *service) AddPerson(person *Person) (*Person, error) {
 
 	slog.Debug("Sending person to queue..")
 
-	err := s.publisher.Publish(queue, person)
+	err := s.publisher.Publish(rabbit.PersonQueue.String(), person)
 	if err != nil {
 		slog.Error("Error publishing message in queue", slog.String("error", err.Error()))
 		return nil, err
