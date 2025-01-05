@@ -2,27 +2,52 @@ package rabbit
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 
-	"github.com/streadway/amqp"
 	"go.uber.org/fx"
+
+	"github.com/streadway/amqp"
 )
 
-func newRabbit(logger *log.Logger) *Rabbit {
+var Module = fx.Provide(
+	newConnection,
+	newChannel,
+	fx.Annotated{
+		Name: "person-publisher",
+		Target: func(ch *amqp.Channel) Publisher {
+			return NewPublisher(PersonQueue.String(), ch)
+		},
+	},
+)
+
+func newConnection() *amqp.Connection {
 	user := os.Getenv("RABBIT_USER")
 	pass := os.Getenv("RABBIT_PASS")
 	hostname := os.Getenv("RABBIT_HOSTNAME")
-	port, _ := strconv.Atoi(os.Getenv("RABBIT_PORT"))
-
-	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d", user, pass, hostname, port))
+	port, err := strconv.Atoi(os.Getenv("RABBIT_PORT"))
 	if err != nil {
-		logger.Printf("Failed to connect on RabbitMQ: %s", err.Error())
 		fx.Error(err)
 	}
 
-	return New(conn)
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d", user, pass, hostname, port))
+	if err != nil {
+		slog.Error("Error connecting to RabbitMQ", slog.String("error", err.Error()))
+		fx.Error(err)
+		return nil
+	}
+
+	return conn
 }
 
-var Module = fx.Provide(newRabbit)
+func newChannel(conn *amqp.Connection) *amqp.Channel {
+	ch, err := conn.Channel()
+	if err != nil {
+		slog.Error("Error opening the AMQP channel", slog.String("error", err.Error()))
+		fx.Error(err)
+		return nil
+	}
+
+	return ch
+}

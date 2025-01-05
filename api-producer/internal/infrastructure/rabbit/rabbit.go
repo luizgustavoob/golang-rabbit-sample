@@ -1,60 +1,54 @@
 package rabbit
 
 import (
+	"log/slog"
+
 	"github.com/streadway/amqp"
 )
 
 type (
-	Logger interface {
-		Printf(format string, values ...interface{})
+	Serializable interface {
+		Serialize() ([]byte, error)
 	}
 
-	Rabbit struct {
-		connection *amqp.Connection
-		logger     Logger
+	Publisher interface {
+		Publish(queue string, message Serializable) error
+	}
+
+	publisher struct {
+		queueName string
+		ch        *amqp.Channel
 	}
 )
 
-func (r *Rabbit) Publish(queueName string, message string) (err error) {
-	ch, err := r.connection.Channel()
+func NewPublisher(queueName string, ch *amqp.Channel) *publisher {
+	return &publisher{
+		queueName: queueName,
+		ch:        ch,
+	}
+}
+
+func (p *publisher) Publish(queueName string, message Serializable) error {
+	msg, err := message.Serialize()
 	if err != nil {
-		r.logger.Printf("Failed to open a channel: %s", err.Error())
-		return
+		slog.Error("Error serializing msg", slog.String("error", err.Error()))
+		return err
 	}
 
-	queue, err := ch.QueueDeclare(
-		queueName, // name
-		false,     // durable
-		false,     // autoDelete
-		false,     // exclusive
-		false,     // noWait
-		nil)       // args
-
-	if err != nil {
-		r.logger.Printf("Failed to open a channel: %s", err.Error())
-		return
-	}
-
-	err = ch.Publish(
-		"",         // exchange
-		queue.Name, // key
-		false,      // mandatory
-		false,      // immediate
+	err = p.ch.Publish(
+		"",        // exchange
+		queueName, // key
+		false,     // mandatory
+		false,     // immediate
 		amqp.Publishing{ // message
 			ContentType: "application/json",
-			Body:        []byte(message),
-		})
-
+			Body:        msg,
+		},
+	)
 	if err != nil {
-		r.logger.Printf("Failed to publish a message: %s", err.Error())
-		return
+		slog.Error("Error publishing the message", slog.String("error", err.Error()))
+		return err
 	}
 
 	return nil
-}
-
-func New(connection *amqp.Connection) *Rabbit {
-	return &Rabbit{
-		connection: connection,
-	}
 }

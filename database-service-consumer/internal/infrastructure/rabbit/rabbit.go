@@ -1,60 +1,56 @@
 package rabbit
 
 import (
-	"log"
+	"encoding/json"
+	"log/slog"
 
 	"github.com/streadway/amqp"
 )
 
 type (
-	Logger interface {
-		Printf(format string, values ...interface{})
+	Consumer interface {
+		Start(*amqp.Channel)
 	}
 
-	Rabbit struct {
-		connection *amqp.Connection
-		logger     Logger
+	Processor[T any] func(T)
+
+	consumer[T any] struct {
+		queueName string
+		processor Processor[T]
 	}
 )
 
-func (r *Rabbit) Consume(queueName string) <-chan amqp.Delivery {
-	ch, err := r.connection.Channel()
-	if err != nil {
-		r.logger.Printf("Failed to open a channel: %s", err.Error())
-		return nil
+func NewConsumer[T any](queueName string, processor Processor[T]) *consumer[T] {
+	return &consumer[T]{
+		queueName: queueName,
+		processor: processor,
 	}
-
-	queue, err := ch.QueueDeclare(
-		queueName, // name
-		false,     // durable
-		false,     // autoDelete
-		false,     // exclusive
-		false,     // noWait
-		nil)       // args
-
-	if err != nil {
-		r.logger.Printf("Failed to declare a queue: %s", err.Error())
-		return nil
-	}
-
-	msgs, err := ch.Consume(
-		queue.Name, // queue
-		"",         // consumer
-		true,       // autoAck
-		false,      // exclusive
-		false,      // noLocal
-		false,      // noWait
-		nil)        //args
-
-	if err != nil {
-		log.Fatalf("Failed to register a consumer: %s", err)
-	}
-
-	return msgs
 }
 
-func New(connection *amqp.Connection) *Rabbit {
-	return &Rabbit{
-		connection: connection,
-	}
+func (c *consumer[T]) Start(ch *amqp.Channel) {
+	go func() {
+		msgs, err := ch.Consume(
+			c.queueName, // queue
+			"",          // consumer
+			true,        // autoAck
+			false,       // exclusive
+			false,       // noLocal
+			false,       // noWait
+			nil,         // args
+		)
+		if err != nil {
+			slog.Error("Error starting consumer", slog.String("error", err.Error()))
+			return
+		}
+
+		for msg := range msgs {
+			var msgIn T
+			if err := json.Unmarshal(msg.Body, &msgIn); err != nil {
+				slog.Error("Error parsing queue msg", slog.String("error", err.Error()))
+				return
+			}
+
+			go c.processor(msgIn)
+		}
+	}()
 }

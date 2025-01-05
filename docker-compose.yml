@@ -1,6 +1,7 @@
-
 services:
   api-producer:
+    profiles:
+      - apps
     container_name: api-producer
     build:
       context: ./api-producer
@@ -11,16 +12,14 @@ services:
       RABBIT_PASS: guest
       RABBIT_HOSTNAME: rabbitmq
       RABBIT_PORT: 5672
-      PORT: 8080
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     ports:
       - "8080:8080"
     networks:
       - app_network
 
   database-service-consumer:
+    profiles:
+      - apps
     container_name: database-service-consumer
     build:
       context: ./database-service-consumer
@@ -32,24 +31,21 @@ services:
       RABBIT_PASS: guest
       RABBIT_HOSTNAME: rabbitmq
       RABBIT_PORT: 5672
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks:
       - app_network
 
   postgres:
+    profiles:
+      - deps
     container_name: postgres
     image: postgres:16-alpine
     restart: always
     volumes:
       - ./scripts/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=mydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
     ports:
       - "5432:5432"
     healthcheck:
@@ -61,20 +57,16 @@ services:
       - app_network
 
   rabbitmq:
+    profiles:
+      - deps
     container_name: rabbitmq
-    image: rabbitmq:4.0-management
-    hostname: rabbitmq
+    image: rabbitmq:management
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
     ports:
       - "15672:15672"
       - "5672:5672"
-    healthcheck:
-      test: [ "CMD", "rabbitmqctl", "status" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - app_network
 

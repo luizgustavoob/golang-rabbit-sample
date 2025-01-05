@@ -17,8 +17,7 @@ image:
 
 .PHONY: up
 up:
-	docker compose up -d
-
-.PHONY: down
-down:
-	docker compose down
+	docker compose --profile deps up -d
+	sleep 3
+	docker exec -it rabbitmq rabbitmqadmin declare queue name=person durable=true
+	docker compose --profile apps up --build -d

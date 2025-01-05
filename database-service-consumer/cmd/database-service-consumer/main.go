@@ -1,22 +1,43 @@
 package main
 
 import (
-	"log"
+	"context"
+	"log/slog"
 	"os"
 
 	"github.com/golang-rabbit-sample/database-service-consumer/internal/app"
 	"github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure"
+	"github.com/golang-rabbit-sample/database-service-consumer/internal/infrastructure/rabbit"
+	"github.com/streadway/amqp"
 	"go.uber.org/fx"
 )
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})))
+
 	fx.New(
-		fx.Provide(newLogger),
 		app.Module,
 		infrastructure.Module,
+		fx.Invoke(startApp),
 	).Run()
 }
 
-func newLogger() *log.Logger {
-	return log.New(os.Stdout, "", log.LstdFlags)
+func startApp(lc fx.Lifecycle, consumerIn rabbit.ConsumersIn, conn *amqp.Connection, ch *amqp.Channel) {
+	lc.Append(fx.Hook{
+		OnStart: func(c context.Context) error {
+			slog.Info("Service running...")
+			for _, c := range consumerIn.Consumers {
+				c.Start(ch)
+			}
+			return nil
+		},
+		OnStop: func(c context.Context) error {
+			slog.Info("Service stopping...")
+			ch.Close()
+			conn.Close()
+			return nil
+		},
+	})
 }
