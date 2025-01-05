@@ -43,19 +43,38 @@ func (c *consumer[T]) Start(ch *amqp.Channel) {
 			return
 		}
 
-		// @TODO: Worker pool
-		for msg := range msgs {
-			var msgIn T
-			if err := json.Unmarshal(msg.Body, &msgIn); err != nil {
-				slog.Error("Error parsing queue msg", slog.String("error", err.Error()))
-				return
-			}
+		sem := newSemaphore(semaphoreSize)
 
-			go func() {
+		for msg := range msgs {
+			sem.Acquire()
+
+			go func(msg amqp.Delivery, sem *semaphore) {
+				defer sem.Release()
+
+				var msgIn T
+				if err := json.Unmarshal(msg.Body, &msgIn); err != nil {
+					slog.Error("Error parsing queue msg", slog.String("error", err.Error()))
+					return
+				}
+
 				if err := c.processor(msgIn); err != nil {
 					slog.Error("Error processing msg", slog.String("error", err.Error()))
 				}
-			}()
+			}(msg, sem)
 		}
 	}()
 }
+
+const semaphoreSize = 30
+
+type semaphore struct {
+	ch chan bool
+}
+
+func newSemaphore(size int) *semaphore {
+	return &semaphore{ch: make(chan bool, size)}
+}
+
+func (s *semaphore) Acquire() { s.ch <- true }
+
+func (s *semaphore) Release() { <-s.ch }
