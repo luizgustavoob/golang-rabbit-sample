@@ -11,24 +11,20 @@ type (
 		Serialize() ([]byte, error)
 	}
 
-	Publisher interface {
-		Publish(queue string, message Serializable) error
+	Producer interface {
+		Produce(queue string, message Serializable) error
 	}
 
-	publisher struct {
-		queueName string
-		ch        *amqp.Channel
+	producer struct {
+		ch *amqp.Channel
 	}
 )
 
-func NewPublisher(queueName string, ch *amqp.Channel) *publisher {
-	return &publisher{
-		queueName: queueName,
-		ch:        ch,
-	}
+func NewProducer(ch *amqp.Channel) *producer {
+	return &producer{ch: ch}
 }
 
-func (p *publisher) Publish(queueName string, message Serializable) error {
+func (p *producer) Produce(queue string, message Serializable) error {
 	msg, err := message.Serialize()
 	if err != nil {
 		slog.Error("Error serializing msg", slog.String("error", err.Error()))
@@ -36,17 +32,17 @@ func (p *publisher) Publish(queueName string, message Serializable) error {
 	}
 
 	err = p.ch.Publish(
-		"",        // exchange
-		queueName, // key
-		false,     // mandatory
-		false,     // immediate
+		"",    // exchange
+		queue, // key
+		false, // mandatory
+		false, // immediate
 		amqp.Publishing{ // message
 			ContentType: "application/json",
 			Body:        msg,
 		},
 	)
 	if err != nil {
-		slog.Error("Error publishing the message", slog.String("error", err.Error()))
+		slog.Error("Error producing the message", slog.String("error", err.Error()))
 		return err
 	}
 

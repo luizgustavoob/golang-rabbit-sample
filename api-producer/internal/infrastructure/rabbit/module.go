@@ -14,12 +14,7 @@ import (
 var Module = fx.Provide(
 	newConnection,
 	newChannel,
-	fx.Annotated{
-		Name: "person-publisher",
-		Target: func(ch *amqp.Channel) Publisher {
-			return NewPublisher(PersonQueue.String(), ch)
-		},
-	},
+	newProducer,
 )
 
 func newConnection() *amqp.Connection {
@@ -50,4 +45,8 @@ func newChannel(conn *amqp.Connection) *amqp.Channel {
 	}
 
 	return ch
+}
+
+func newProducer(ch *amqp.Channel) Producer {
+	return NewProducer(ch)
 }

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	"github.com/golang-rabbit-sample/api-producer/internal/api"
 	"github.com/golang-rabbit-sample/api-producer/internal/api/mocks"
@@ -20,10 +19,10 @@ func TestService_AddPerson(t *testing.T) {
 			Phone: "12345678",
 		}
 
-		publisher := mocks.NewPublisher(t)
-		publisher.On("Publish", mock.Anything, person).Return(nil)
+		producer := mocks.NewProducer(t)
+		producer.On("Produce", "person", person).Return(nil)
 
-		service := api.NewService(publisher)
+		service := api.NewService(producer)
 		p, err := service.AddPerson(person)
 
 		assert.NoError(t, err)
@@ -47,7 +46,7 @@ func TestService_AddPerson(t *testing.T) {
 		assert.Nil(t, p)
 	})
 
-	t.Run("should return error due to unexpected behavior on publisher", func(t *testing.T) {
+	t.Run("should return error due to unexpected behavior on producer", func(t *testing.T) {
 		person := &api.Person{
 			Name:  "name",
 			Age:   25,
@@ -57,10 +56,10 @@ func TestService_AddPerson(t *testing.T) {
 
 		expectedErr := errors.New("something wrong has happened")
 
-		publisher := mocks.NewPublisher(t)
-		publisher.On("Publish", mock.Anything, person).Return(expectedErr)
+		producer := mocks.NewProducer(t)
+		producer.On("Produce", "person", person).Return(expectedErr)
 
-		service := api.NewService(publisher)
+		service := api.NewService(producer)
 		p, err := service.AddPerson(person)
 
 		assert.Nil(t, p)

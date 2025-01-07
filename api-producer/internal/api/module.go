@@ -12,17 +12,12 @@ var Module = fx.Provide(
 	newHandler,
 )
 
-type ServiceParams struct {
-	fx.In
-	Publisher rabbit.Publisher `name:"person-publisher"`
+func newService(producer rabbit.Producer) *service {
+	return NewService(producer)
 }
 
-func newService(params ServiceParams) *service {
-	return NewService(params.Publisher)
-}
-
-func newHandler(service *service) app_handler.HandlerResult {
-	return app_handler.HandlerResult{
+func newHandler(service *service) app_handler.HandlerOut {
+	return app_handler.HandlerOut{
 		Handler: NewHandler(service),
 	}
 }

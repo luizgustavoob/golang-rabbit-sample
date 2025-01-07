@@ -15,18 +15,18 @@ type (
 		http.Handler
 	}
 
-	HandlerParams struct {
+	HandlersIn struct {
 		fx.In
 		Handlers []Handler `group:"handlers"`
 	}
 
-	HandlerResult struct {
+	HandlerOut struct {
 		fx.Out
 		Handler Handler `group:"handlers"`
 	}
 )
 
-func New(params HandlerParams) http.Handler {
+func New(params HandlersIn) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)

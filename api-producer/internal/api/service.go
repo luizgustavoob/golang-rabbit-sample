@@ -10,12 +10,12 @@ import (
 var ErrInvalidPerson = errors.New("person contains invalid fields")
 
 type service struct {
-	publisher rabbit.Publisher
+	producer rabbit.Producer
 }
 
-func NewService(publisher rabbit.Publisher) *service {
+func NewService(producer rabbit.Producer) *service {
 	return &service{
-		publisher: publisher,
+		producer: producer,
 	}
 }
 
@@ -28,13 +28,13 @@ func (s *service) AddPerson(person *Person) (*Person, error) {
 
 	slog.Debug("Sending person to queue..")
 
-	err := s.publisher.Publish(rabbit.PersonQueue.String(), person)
+	err := s.producer.Produce(rabbit.PersonQueue.String(), person)
 	if err != nil {
-		slog.Error("Error publishing message in queue", slog.String("error", err.Error()))
+		slog.Error("Error producing message in queue", slog.String("error", err.Error()))
 		return nil, err
 	}
 
-	slog.Info("SUCCESS. Person has been published")
+	slog.Info("SUCCESS. Person has been produced")
 
 	return person, nil
 }
