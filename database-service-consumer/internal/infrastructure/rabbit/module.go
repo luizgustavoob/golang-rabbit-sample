@@ -21,7 +21,7 @@ type (
 		Consumers []Consumer `group:"consumers"`
 	}
 
-	ConsumersOut struct {
+	ConsumerOut struct {
 		fx.Out
 		Consumer Consumer `group:"consumers"`
 	}

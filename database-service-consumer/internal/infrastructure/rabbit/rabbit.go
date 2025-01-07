@@ -1,6 +1,7 @@
 package rabbit
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 
@@ -9,63 +10,75 @@ import (
 
 type (
 	Consumer interface {
-		Start(*amqp.Channel)
+		Start(context.Context, *amqp.Channel)
 	}
 
 	Processor[T any] func(T) error
 
 	consumer[T any] struct {
-		queueName string
+		queue     string
 		processor Processor[T]
 	}
 )
 
-func NewConsumer[T any](queueName string, processor Processor[T]) *consumer[T] {
+func NewConsumer[T any](queue string, processor Processor[T]) *consumer[T] {
 	return &consumer[T]{
-		queueName: queueName,
+		queue:     queue,
 		processor: processor,
 	}
 }
 
-func (c *consumer[T]) Start(ch *amqp.Channel) {
+func (c *consumer[T]) Start(ctx context.Context, ch *amqp.Channel) {
 	go func() {
 		msgs, err := ch.Consume(
-			c.queueName, // queue
-			"",          // consumer
-			true,        // autoAck
-			false,       // exclusive
-			false,       // noLocal
-			false,       // noWait
-			nil,         // args
+			c.queue, // queue
+			"",      // consumer
+			true,    // autoAck
+			false,   // exclusive
+			false,   // noLocal
+			false,   // noWait
+			nil,     // args
 		)
 		if err != nil {
 			slog.Error("Error starting consumer", slog.String("error", err.Error()))
 			return
 		}
 
-		sem := newSemaphore(semaphoreSize)
+		sem := newSemaphore(semaphoreSizePerConsumer)
 
-		for msg := range msgs {
-			sem.Acquire()
+		for {
+			select {
+			case <-ctx.Done():
+				sem.Close()
+				return
 
-			go func(msg amqp.Delivery, sem *semaphore) {
-				defer sem.Release()
-
-				var msgIn T
-				if err := json.Unmarshal(msg.Body, &msgIn); err != nil {
-					slog.Error("Error parsing queue msg", slog.String("error", err.Error()))
+			case msg, ok := <-msgs:
+				if !ok {
+					sem.Close()
 					return
 				}
 
-				if err := c.processor(msgIn); err != nil {
-					slog.Error("Error processing msg", slog.String("error", err.Error()))
-				}
-			}(msg, sem)
+				sem.Acquire()
+
+				go func(msg amqp.Delivery, sem *semaphore) {
+					defer sem.Release()
+
+					var msgIn T
+					if err := json.Unmarshal(msg.Body, &msgIn); err != nil {
+						slog.Error("Error parsing queue msg", slog.String("error", err.Error()))
+						return
+					}
+
+					if err := c.processor(msgIn); err != nil {
+						slog.Error("Error processing msg", slog.String("error", err.Error()))
+					}
+				}(msg, sem)
+			}
 		}
 	}()
 }
 
-const semaphoreSize = 30
+const semaphoreSizePerConsumer = 20
 
 type semaphore struct {
 	ch chan bool
@@ -78,3 +91,5 @@ func newSemaphore(size int) *semaphore {
 func (s *semaphore) Acquire() { s.ch <- true }
 
 func (s *semaphore) Release() { <-s.ch }
+
+func (s *semaphore) Close() { close(s.ch) }
