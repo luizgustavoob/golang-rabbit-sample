@@ -25,19 +25,22 @@ func main() {
 }
 
 func startApp(lc fx.Lifecycle, consumerIn rabbit.ConsumersIn, conn *amqp.Connection, ch *amqp.Channel) {
-	lc.Append(fx.Hook{
-		OnStart: func(c context.Context) error {
+	lc.Append(
+		fx.StartHook(func(ctx context.Context) error {
 			slog.Info("Service running...")
 			for _, c := range consumerIn.Consumers {
-				c.Start(ch)
+				c.Start(ctx, ch)
 			}
 			return nil
-		},
-		OnStop: func(c context.Context) error {
+		}),
+	)
+
+	lc.Append(
+		fx.StopHook(func(c context.Context) error {
 			slog.Info("Service stopping...")
 			ch.Close()
 			conn.Close()
 			return nil
-		},
-	})
+		}),
+	)
 }
