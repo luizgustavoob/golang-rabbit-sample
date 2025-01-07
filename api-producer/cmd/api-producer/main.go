@@ -34,18 +34,19 @@ func startServer(lc fx.Lifecycle, handler http.Handler, conn *amqp.Connection, c
 		WriteTimeout: 10 * time.Second,
 	}
 
-	lc.Append(fx.Hook{
-		OnStart: func(context.Context) error {
-			slog.Info("Starting server")
-			go srv.ListenAndServe()
-			return nil
-		},
-
-		OnStop: func(ctx context.Context) error {
-			slog.Info("Stopping server...")
-			ch.Close()
-			conn.Close()
-			return srv.Shutdown(ctx)
-		},
-	})
+	lc.Append(
+		fx.StartStopHook(
+			func(ctx context.Context) error {
+				slog.Info("Starting server")
+				go srv.ListenAndServe()
+				return nil
+			},
+			func(ctx context.Context) error {
+				slog.Info("Stopping server...")
+				ch.Close()
+				conn.Close()
+				return srv.Shutdown(ctx)
+			},
+		),
+	)
 }

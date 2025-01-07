@@ -8,7 +8,7 @@ import (
 
 type (
 	Service interface {
-		AddPerson(person *Person) (*Person, error)
+		AddPerson(*Person) (*Person, error)
 	}
 
 	handler struct {
